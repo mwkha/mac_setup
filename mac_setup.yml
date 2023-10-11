@@ -1,4 +1,4 @@
-- hosts: localhost
+  - hosts: localhost
   connection: local
   remote_user: "{{ username }}"
   gather_facts: yes
@@ -11,3 +11,56 @@
       - { version: 17 }
   tasks:
     - name: Install command line tools using Homebrew
+    homebrew:
+      name: "{{ item.name }}"
+      state: present
+    ignore_errors: yes
+    with_flattened:
+      - { name: openjdk@8 }
+      - { name: openjdk@11 }
+      - { name: openjdk@17 }
+      - { name: maven }
+      - { name: helm }
+      - { name: jq }
+      - { name: yq }
+      - { name: python }
+      - { name: terraform }
+
+    - name: Generate SSH for GitHub
+      openssh_keypair:
+      path: "~/.ssh/rsa_key"
+      type: rsa
+      size: 2048
+      comment: " {{ email }} "
+    
+    - name: Copy ssh content into Git
+      debug:
+        msg: "{{ lookup('file', '~/.ssh/my_rsa_key.pub') }}"
+    
+    - name: Pause for git ssh copy paste
+      pause:
+        prompt: "Press enter when finished copying ssh key value"
+    
+    - name: Update git conf
+      git_config:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        scope: global
+      with_flattened:
+        - { name: user.name , value: "{{ name }}" }
+        - { name: user.email , value: "{{ email }}" }
+        - { name: color.ui , value: "auto" }
+        - { name: push.default , value: "simple}" }
+
+    - name: Set JAVA_HOME var
+      ansible.builtin.set_fact:
+        ansible_env:
+          java_home_path: "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+
+    - name: Add JAVA_HOME to .zshrc
+      ansible.builtin.blockinfile:
+        path: ~/.zshrc
+        block: |
+          export JAVA_HOME="{{ ansible_env.java_home_path }}"
+        insertafter: EOF
+        create: yes
