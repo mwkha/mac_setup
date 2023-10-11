@@ -1,0 +1,13 @@
+- hosts: localhost
+  connection: local
+  remote_user: "{{ username }}"
+  gather_facts: yes
+  var_files:
+    user.conf.yaml
+  vars:
+    jdks:
+      - { version: 8 }
+      - { version: 11 }
+      - { version: 17 }
+  tasks:
+    - name: Install command line tools using Homebrew
