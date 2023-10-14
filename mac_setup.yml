@@ -1,66 +1,89 @@
-  - hosts: localhost
+- hosts: localhost
   connection: local
   remote_user: "{{ username }}"
   gather_facts: yes
   var_files:
-    user.conf.yaml
+    - user.conf.yaml
   vars:
     jdks:
       - { version: 8 }
       - { version: 11 }
       - { version: 17 }
   tasks:
-    - name: Install command line tools using Homebrew
-    homebrew:
-      name: "{{ item.name }}"
-      state: present
-    ignore_errors: yes
-    with_flattened:
-      - { name: openjdk@8 }
-      - { name: openjdk@11 }
-      - { name: openjdk@17 }
-      - { name: maven }
-      - { name: helm }
-      - { name: jq }
-      - { name: yq }
-      - { name: python }
-      - { name: terraform }
+  - name: Install command line tools using Homebrew
+  homebrew:
+       name: "{{ item.name }}"
+       state: present
+   ignore_errors: yes
+   with_flattened:
+       - { name: openjdk@8 }
+       - { name: openjdk@11 }
+       - { name: openjdk@17 }
+       - { name: maven }
+       - { name: helm }
+       - { name: jq }
+       - { name: yq }
+       - { name: python }
+       - { name: terraform }
+       - { name: zsh }
+       - { name: git }
+   
+   - name: Install cask packages using Homebrew
+       when: ansible_distribution == 'MacOSX'
+       register: result
+       ignore_errors: yes
+       homebrew_cask:
+        name: "{{ item.name }}"
+        state: installed
+       ignore_errors: yes
+       with_flattened:
+        - { name: iterm2 }
+        - { name: webstorm }
+        - { name: intellij-idea }
+        - { name: sublime-text }
+        - { name: docker }
+        - { name: visual-studio-code }
+        - { name: postman }
+        - { name: azure-data-studio }
 
-    - name: Generate SSH for GitHub
-      openssh_keypair:
-      path: "~/.ssh/rsa_key"
-      type: rsa
-      size: 2048
-      comment: " {{ email }} "
-    
-    - name: Copy ssh content into Git
-      debug:
+   - name: Generate SSH for GitHub
+       openssh_keypair:
+       path: "~/.ssh/rsa_key"
+       type: rsa
+       size: 2048
+       comment: " {{ email }} "
+   
+   - name: Copy ssh content into Git
+       debug:
         msg: "{{ lookup('file', '~/.ssh/my_rsa_key.pub') }}"
-    
-    - name: Pause for git ssh copy paste
-      pause:
+   
+   - name: Pause for git ssh copy paste
+       pause:
         prompt: "Press enter when finished copying ssh key value"
-    
-    - name: Update git conf
-      git_config:
+   
+   - name: Update git conf
+       git_config:
         name: "{{ item.name }}"
         value: "{{ item.value }}"
         scope: global
-      with_flattened:
+       with_flattened:
         - { name: user.name , value: "{{ name }}" }
         - { name: user.email , value: "{{ email }}" }
         - { name: color.ui , value: "auto" }
         - { name: push.default , value: "simple}" }
+   
+   - name: Install oh-my-zsh
+       shell
 
-    - name: Set JAVA_HOME var
-      ansible.builtin.set_fact:
+   - name: Set JAVA_HOME var
+       ansible.builtin.set_fact:
         ansible_env:
-          java_home_path: "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+           java_home_path: "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
 
-    - name: Add JAVA_HOME to .zshrc
-      ansible.builtin.blockinfile:
+   - name: Add JAVA_HOME to .zshrc
+       ansible.builtin.blockinfile:
         path: ~/.zshrc
         block: |
-          export JAVA_HOME="{{ ansible_env.java_home_path }}"
+           export JAVA_HOME="{{ ansible_env.java_home_path }}"
         insertafter: EOF
         create: yes
