@@ -80,7 +80,7 @@
     - name: Clone powerlevel10k theme into zsh custom theme dir
       ansible.builtin.git:
         repo: https://github.com/romkatv/powerlevel10k.git
-        dest: "{{ zsh_custom + 'themes/powerlevel10k' }}"
+        dest: "{{ '/Users/' + user + '/.oh-my-zsh/custom/themes/powerlevel10k' }}"
         single_branch: yes
         version: master
       
