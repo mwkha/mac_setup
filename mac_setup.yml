@@ -25,6 +25,7 @@
         - { name: terraform }
         - { name: zsh }
         - { name: git }
+        - { name: node }
    
     - name: Install cask packages using Homebrew
       when: ansible_distribution == 'MacOSX'
